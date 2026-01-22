@@ -3,58 +3,70 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
-import { Droplets, Mail, Lock, User, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Droplets, Mail, Lock, User, ArrowLeft, Loader2, Eye, EyeOff, Phone, MapPin, Gift } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { supabase } from '@/lib/supabase';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 const signupSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(20, 'Username must be less than 20 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(4, 'Password must be at least 4 characters'),
+  fullName: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(4),
+  phone: z.string().min(6),
+  location: z.string().min(2),
+  referralCode: z.string().optional(),
 });
 
 const Auth: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
-  const [username, setUsername] = useState('');
+
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { login, signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate('/dashboard');
+    });
+  }, [navigate]);
 
   const validateForm = () => {
     try {
       if (isSignUp) {
-        signupSchema.parse({ username, email, password });
+        signupSchema.parse({
+          fullName,
+          email,
+          password,
+          phone,
+          location,
+          referralCode,
+        });
       } else {
-        loginSchema.parse({ username, password });
+        loginSchema.parse({ email, password });
       }
       setErrors({});
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
-        err.errors.forEach((error) => {
-          if (error.path[0]) {
-            newErrors[error.path[0] as string] = error.message;
-          }
+        err.errors.forEach(e => {
+          if (e.path[0]) newErrors[e.path[0] as string] = e.message;
         });
         setErrors(newErrors);
       }
@@ -64,43 +76,80 @@ const Auth: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
       if (isSignUp) {
-        const result = await signup(username, email, password);
-        if (result.success) {
-          toast({
-            title: 'Welcome to Bluetides!',
-            description: 'Your account has been created successfully.',
-          });
-          navigate('/dashboard');
-        } else {
-          toast({
-            title: 'Sign up failed',
-            description: result.error,
-            variant: 'destructive',
-          });
+        // 1. Create auth user
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (authError || !authData.user) {
+          throw new Error(authError?.message || 'Signup failed');
         }
+
+        // 2. Check referral code
+        let referredByUserId: number | null = null;
+
+        if (referralCode) {
+          const { data: refUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('referral_code', referralCode)
+            .single();
+
+          if (refUser) {
+            referredByUserId = refUser.id;
+          }
+        }
+
+        // 3. Insert into users table
+        const { error: insertError } = await supabase.from('users').insert({
+          full_name: fullName,
+          email,
+          phone,
+          location,
+          inviter_code: referralCode || null,
+          referred_by: referredByUserId,
+          referral_code: crypto.randomUUID().slice(0, 8),
+        });
+
+        if (insertError) {
+          throw new Error(insertError.message);
+        }
+
+        toast({
+          title: 'Account created 🎉',
+          description: 'Welcome! Your account has been successfully created.',
+        });
+
+        navigate('/dashboard');
       } else {
-        const result = await login(username, password);
-        if (result.success) {
-          toast({
-            title: 'Welcome back!',
-            description: 'You have signed in successfully.',
-          });
-          navigate('/dashboard');
-        } else {
-          toast({
-            title: 'Sign in failed',
-            description: result.error,
-            variant: 'destructive',
-          });
-        }
+        // SIGN IN
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw new Error(error.message);
+
+        toast({
+          title: 'Welcome back 👋',
+          description: 'Signed in successfully.',
+        });
+
+        navigate('/dashboard');
       }
+    } catch (err: any) {
+      toast({
+        title: 'Authentication error',
+        description: err.message,
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -108,153 +157,63 @@ const Auth: React.FC = () => {
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
-      {/* Background bubbles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-4 h-4 rounded-full bg-primary-foreground/10 animate-bubble"
-            style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${i * 1.5}s`,
-              animationDuration: `${8 + Math.random() * 4}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Back button */}
+      <div className="w-full max-w-md">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-8 transition-colors"
+          className="flex items-center gap-2 mb-6 text-primary-foreground/80"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to home</span>
+          <ArrowLeft className="w-4 h-4" /> Back to home
         </button>
 
-        {/* Card */}
-        <div className="bg-card rounded-2xl shadow-strong p-8 animate-scale-in">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-12 h-12 rounded-xl gradient-ocean flex items-center justify-center">
-              <Droplets className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold text-gradient">Bluetides</span>
+        <div className="bg-card rounded-2xl shadow-strong p-8">
+          <div className="flex justify-center mb-6 gap-2 items-center">
+            <Droplets className="w-7 h-7 text-primary" />
+            <span className="text-2xl font-bold">Bluetides</span>
           </div>
 
-          {/* Header */}
-          <h1 className="text-2xl font-bold text-foreground text-center mb-2">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          <h1 className="text-xl font-bold text-center mb-6">
+            {isSignUp ? 'Create Account' : 'Sign In'}
           </h1>
-          <p className="text-muted-foreground text-center mb-8">
-            {isSignUp
-              ? 'Sign up to schedule your first free pickup'
-              : 'Sign in to manage your laundry orders'}
-          </p>
 
-          {/* Demo credentials hint */}
-          {!isSignUp && (
-            <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
-              <p className="text-sm text-muted-foreground text-center">
-                <strong>Demo:</strong> Username: <code className="bg-muted px-1 rounded">user1</code> / Password: <code className="bg-muted px-1 rounded">pass</code>
-              </p>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              {errors.username && (
-                <p className="text-sm text-destructive">{errors.username}</p>
-              )}
-            </div>
-
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email}</p>
-                )}
-              </div>
+              <>
+                <Input placeholder="Full name" value={fullName} onChange={e => setFullName(e.target.value)} />
+                <Input placeholder="Phone number" value={phone} onChange={e => setPhone(e.target.value)} />
+                <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
+                <Input placeholder="Referral code (optional)" value={referralCode} onChange={e => setReferralCode(e.target.value)} />
+              </>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
+            <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5"
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
             </div>
 
-            <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                </>
-              ) : (
-                <>{isSignUp ? 'Create Account' : 'Sign In'}</>
-              )}
+            <Button className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : isSignUp ? 'Create Account' : 'Sign In'}
             </Button>
           </form>
 
-          {/* Toggle */}
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setErrors({});
-                }}
-                className="text-primary font-semibold hover:underline"
-              >
-                {isSignUp ? 'Sign In' : 'Sign Up'}
-              </button>
-            </p>
-          </div>
+          <p className="text-center mt-4 text-sm">
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <button onClick={() => setIsSignUp(!isSignUp)} className="text-primary font-semibold">
+              {isSignUp ? 'Sign in' : 'Sign up'}
+            </button>
+          </p>
         </div>
       </div>
     </div>
