@@ -3,45 +3,83 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const AdminLogin: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { adminLogin, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // 🔐 If already logged in as admin, redirect
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      navigate('/bluetides/dashboard');
-    }
-  }, [isAuthenticated, user, navigate]);
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+
+      const userId = data.session.user.id;
+
+      const { data: admin, error } = await supabase
+        .from('washer_one')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (!error && admin?.role === 'admin') {
+        navigate('/bluetides/dashboard', { replace: true });
+      }
+    });
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const result = await adminLogin(username, password);
-      if (result.success) {
-        toast({
-          title: 'Welcome, Admin!',
-          description: 'You have been signed in successfully.',
-        });
-        navigate('/bluetides/dashboard');
-      } else {
-        toast({
-          title: 'Access Denied',
-          description: result.error,
-          variant: 'destructive',
-        });
+      // 1️⃣ Sign in via Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error || !data.user) {
+        throw new Error('Invalid email or password');
       }
+
+      // 2️⃣ Check admin role in washer_one
+      const { data: admin, error: roleError } = await supabase
+        .from('washer_one')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (roleError || !admin) {
+        await supabase.auth.signOut();
+        throw new Error('Access denied. Admin account not found.');
+      }
+
+      if (admin.role !== 'admin') {
+        await supabase.auth.signOut();
+        throw new Error('Access denied. Insufficient privileges.');
+      }
+
+      // ✅ Success
+      toast({
+        title: 'Welcome, Admin 👑',
+        description: 'You have successfully signed in.',
+      });
+
+      navigate('/bluetides/dashboard', { replace: true });
+    } catch (err: any) {
+      toast({
+        title: 'Admin Login Failed',
+        description: err.message,
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +88,6 @@ const AdminLogin: React.FC = () => {
   return (
     <div className="min-h-screen bg-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Card */}
         <div className="bg-card rounded-2xl shadow-strong p-8 animate-scale-in">
           {/* Logo */}
           <div className="flex items-center justify-center gap-3 mb-8">
@@ -59,7 +96,6 @@ const AdminLogin: React.FC = () => {
             </div>
           </div>
 
-          {/* Header */}
           <h1 className="text-2xl font-bold text-foreground text-center mb-2">
             Admin Portal
           </h1>
@@ -67,25 +103,17 @@ const AdminLogin: React.FC = () => {
             Bluetides Laundry Management System
           </p>
 
-          {/* Demo credentials hint */}
-          <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-border">
-            <p className="text-sm text-muted-foreground text-center">
-              <strong>Demo:</strong> Username: <code className="bg-muted px-1 rounded">admin</code> / Password: <code className="bg-muted px-1 rounded">admin123</code>
-            </p>
-          </div>
-
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Admin Username</Label>
+              <Label htmlFor="email">Admin Email</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter admin username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="admin@bluetides.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   required
                 />
@@ -110,12 +138,21 @@ const AdminLogin: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              variant="hero"
+              className="w-full"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -130,7 +167,6 @@ const AdminLogin: React.FC = () => {
             </Button>
           </form>
 
-          {/* Footer */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Secure admin access only. Unauthorized access is prohibited.
           </p>

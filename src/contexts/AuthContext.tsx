@@ -1,150 +1,48 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: 'customer' | 'admin';
-  loyaltyPoints: number;
-  subscription?: {
-    plan: string;
-    status: 'active' | 'inactive';
-    expiresAt: string;
-  };
-}
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
+  session: Session | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  adminLogin: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Dummy users for testing - Supabase ready structure
-const DUMMY_USERS: Record<string, { password: string; user: User }> = {
-  user1: {
-    password: 'pass',
-    user: {
-      id: '1',
-      username: 'user1',
-      email: 'user1@example.com',
-      role: 'customer',
-      loyaltyPoints: 150,
-      subscription: {
-        plan: 'Premium',
-        status: 'active',
-        expiresAt: '2025-02-15',
-      },
-    },
-  },
-  admin: {
-    password: 'admin123',
-    user: {
-      id: '2',
-      username: 'admin',
-      email: 'admin@bluetides.com',
-      role: 'admin',
-      loyaltyPoints: 0,
-    },
-  },
-};
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored session - Supabase ready
-    const storedUser = localStorage.getItem('bluetides_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem('bluetides_user');
-      }
-    }
-    setIsLoading(false);
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const userData = DUMMY_USERS[username];
-    if (!userData) {
-      return { success: false, error: 'User not found' };
-    }
-    if (userData.password !== password) {
-      return { success: false, error: 'Invalid password' };
-    }
-    if (userData.user.role === 'admin') {
-      return { success: false, error: 'Please use admin login' };
-    }
-
-    setUser(userData.user);
-    localStorage.setItem('bluetides_user', JSON.stringify(userData.user));
-    return { success: true };
-  };
-
-  const adminLogin = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const userData = DUMMY_USERS[username];
-    if (!userData) {
-      return { success: false, error: 'Admin not found' };
-    }
-    if (userData.password !== password) {
-      return { success: false, error: 'Invalid password' };
-    }
-    if (userData.user.role !== 'admin') {
-      return { success: false, error: 'Unauthorized access' };
-    }
-
-    setUser(userData.user);
-    localStorage.setItem('bluetides_user', JSON.stringify(userData.user));
-    return { success: true };
-  };
-
-  const signup = async (username: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    if (DUMMY_USERS[username]) {
-      return { success: false, error: 'Username already exists' };
-    }
-
-    // In real app, this would create user in Supabase
-    const newUser: User = {
-      id: Date.now().toString(),
-      username,
-      email,
-      role: 'customer',
-      loyaltyPoints: 0,
-    };
-
-    setUser(newUser);
-    localStorage.setItem('bluetides_user', JSON.stringify(newUser));
-    return { success: true };
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('bluetides_user');
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        session,
         isLoading,
-        login,
-        adminLogin,
-        signup,
         logout,
       }}
     >
@@ -154,9 +52,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 };

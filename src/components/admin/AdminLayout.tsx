@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import {
   Droplets,
   LayoutDashboard,
@@ -9,47 +9,83 @@ import {
   TrendingUp,
   LogOut,
   Menu,
-  X,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/bluetides/dashboard' },
-  { label: 'Orders', icon: Package, path: '/bluetides/orders' },
-  { label: 'Customers', icon: Users, path: '/bluetides/customers' },
-  { label: 'Analytics', icon: TrendingUp, path: '/bluetides/analytics' },
+  { label: "Dashboard", icon: LayoutDashboard, path: "/bluetides/dashboard" },
+  { label: "Orders", icon: Package, path: "/bluetides/orders" },
+  { label: "Customers", icon: Users, path: "/bluetides/customers" },
+  { label: "Analytics", icon: TrendingUp, path: "/bluetides/analytics" },
 ];
+
+interface WasherAdmin {
+  id: string;
+  email: string;
+  role: string;
+}
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [admin, setAdmin] = useState<WasherAdmin | null>(null);
+
+  // ----------------------------------------
+  // Load auth user + washer role
+  // ----------------------------------------
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
-      navigate('/bluetides');
-    }
-  }, [isAuthenticated, user, navigate]);
+    const loadAdmin = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+      if (!user) {
+        navigate("/bluetides");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("washer_one")
+        .select("id,email,role")
+        .eq("id", user.id)
+        .single();
+
+      if (error || !data || data.role !== "admin") {
+        navigate("/bluetides");
+        return;
+      }
+
+      setAdmin(data);
+      setLoading(false);
+    };
+
+    loadAdmin();
+  }, [navigate]);
+
+  // ----------------------------------------
+  // Logout
+  // ----------------------------------------
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
-  if (!user || user.role !== 'admin') return null;
+  if (loading || !admin) return null;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="admin min-h-screen">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -57,20 +93,29 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform lg:translate-x-0 lg:static',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          "fixed inset-y-0 left-0 z-50 w-64 h-screen",
+          "bg-white/5 backdrop-blur-xl",
+          "border-r border-white/10",
+          "shadow-[0_0_40px_rgba(0,180,255,0.08)]",
+          "transition-transform duration-300",
+          "lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-border">
+          <div className="p-6 border-b border-white/10">
             <Link to="/bluetides/dashboard" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-ocean flex items-center justify-center">
-                <Droplets className="w-6 h-6 text-primary-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center shadow-inner">
+                <Droplets className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
-                <span className="text-lg font-bold text-foreground">Bluetides</span>
-                <p className="text-xs text-muted-foreground">Admin Panel</p>
+                <span className="text-lg font-semibold text-white">
+                  Bluetides
+                </span>
+                <p className="text-xs text-muted-foreground tracking-wide">
+                  Admin Control
+                </p>
               </div>
             </Link>
           </div>
@@ -79,41 +124,48 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <nav className="flex-1 p-4 space-y-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all',
+                    "sidebar-item group flex items-center gap-3 px-4 py-3 rounded-xl",
+                    "transition-all duration-300",
                     isActive
-                      ? 'gradient-ocean text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      ? "active bg-cyan-500/15 text-cyan-400"
+                      : "text-muted-foreground hover:bg-white/5 hover:text-white"
                   )}
                 >
                   <item.icon className="w-5 h-5" />
-                  {item.label}
+                  <span className="font-medium">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          {/* User section */}
-          <div className="p-4 border-t border-border">
+          {/* User Section */}
+          <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full gradient-ocean flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">
-                  {user.username.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                <span className="text-cyan-400 font-bold">
+                  {admin.email.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div>
-                <p className="font-medium text-foreground">{user.username}</p>
-                <p className="text-xs text-muted-foreground">Administrator</p>
+              <div className="overflow-hidden">
+                <p className="font-medium text-white truncate">
+                  {admin.email}
+                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">
+                  {admin.role}
+                </p>
               </div>
             </div>
+
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full border-white/10 hover:bg-red-500/10 hover:text-red-400"
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -124,20 +176,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="lg:ml-64 min-h-screen flex flex-col">
         {/* Mobile header */}
-        <header className="lg:hidden sticky top-0 z-30 h-16 bg-card border-b border-border flex items-center px-4">
+        <header className="lg:hidden sticky top-0 z-30 h-16 bg-background/80 backdrop-blur border-b border-white/10 flex items-center px-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-secondary"
+            className="p-2 rounded-lg hover:bg-white/10"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-6 h-6 text-white" />
           </button>
-          <span className="ml-4 font-bold text-foreground">Admin Panel</span>
+          <span className="ml-4 font-semibold text-white">
+            Admin Panel
+          </span>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 p-6 lg:p-8 overflow-auto">
+        {/* Page content with animation */}
+        <main
+          key={location.pathname}
+          className="flex-1 p-6 lg:p-8 overflow-y-auto
+                     animate-fade-slide"
+        >
           {children}
         </main>
       </div>

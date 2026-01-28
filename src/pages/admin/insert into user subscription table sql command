@@ -1,0 +1,22 @@
+INSERT INTO public.user_subscriptions (
+  id,
+  user_id,
+  subscription_plan_id,
+  is_active,
+  created_at
+)
+VALUES
+(
+  gen_random_uuid(),
+  'a6493ac7-067f-48de-909a-7d87882b72bf',
+  'dba758d0-cd91-4418-a88a-125389f15f24', -- Basic (1800)
+  true,
+  now()
+),
+(
+  gen_random_uuid(),
+  'eca08358-2eaa-4188-9cf7-89b83c571cfa',
+  'c53df8a8-4008-418b-bdf8-c88981b1f4c2', -- Premium (5000)
+  true,
+  now()
+);
