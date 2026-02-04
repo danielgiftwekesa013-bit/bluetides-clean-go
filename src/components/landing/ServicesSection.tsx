@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef } from "react"
 import {
   Shirt,
   BedDouble,
@@ -15,56 +15,48 @@ gsap.registerPlugin(ScrollTrigger)
 const services = [
   {
     icon: Shirt,
-    title: "Clothes",
-    description: "Regular wash, dry cleaning, and ironing for all fabrics",
-    price: "From KES 100/kg",
+    title: "Everyday Laundry",
+    description: "Expert washing, drying and ironing for all fabrics",
     color: "from-blue-500 to-cyan-500",
   },
   {
     icon: BedDouble,
-    title: "Duvets & Comforters",
-    description: "Deep cleaning for fluffy, fresh bedding",
-    price: "From KES 800",
+    title: "Duvets & Bedding",
+    description: "Deep-cleaned for freshness, softness and hygiene",
     color: "from-purple-500 to-pink-500",
   },
   {
     icon: Square,
     title: "Blankets",
-    description: "Gentle care for wool, fleece, and cotton blankets",
-    price: "From KES 300",
+    description: "Gentle care for wool, fleece and cotton blankets",
     color: "from-orange-500 to-red-500",
   },
   {
     icon: RectangleHorizontal,
     title: "Carpets & Rugs",
-    description: "Professional deep cleaning and stain removal",
-    price: "From KES 750/sqm",
+    description: "Professional stain removal and deep fiber cleaning",
     color: "from-green-500 to-emerald-500",
   },
   {
     icon: RectangleHorizontal,
     title: "Mats",
-    description: "Door mats, bath mats, and kitchen mats",
-    price: "From KES 200",
+    description: "Door, bath and kitchen mats cleaned thoroughly",
     color: "from-teal-500 to-cyan-500",
   },
   {
     icon: Footprints,
-    title: "Shoes",
-    description: "Sneaker cleaning, leather care, and restoration",
-    price: "From KES 150/pair",
+    title: "Shoe Care",
+    description: "Sneaker cleaning, leather care and restoration",
     color: "from-indigo-500 to-purple-500",
   },
 ]
 
-const ServicesSection: React.FC = () => {
+const ServicesSection = () => {
   const sectionRef = useRef<HTMLElement>(null)
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
-      /* ----------------------------
-         HEADER REVEAL
-      ----------------------------- */
+      /* ---------------- HEADER ---------------- */
       gsap.from(".services-header", {
         y: 60,
         opacity: 0,
@@ -72,18 +64,16 @@ const ServicesSection: React.FC = () => {
         ease: "power4.out",
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 80%",
+          start: "top 75%",
         },
       })
 
-      /* ----------------------------
-         SERVICES CARDS (3D STAGGER)
-      ----------------------------- */
+      /* ---------------- CARDS ---------------- */
       gsap.from(".service-card", {
-        y: 80,
+        y: 100,
         opacity: 0,
-        rotateX: 25,
-        z: -150,
+        rotateX: 35,
+        transformOrigin: "top center",
         stagger: 0.15,
         duration: 1.2,
         ease: "power3.out",
@@ -93,42 +83,18 @@ const ServicesSection: React.FC = () => {
         },
       })
 
-      /* ----------------------------
-         CARD HOVER (GSAP > CSS)
-      ----------------------------- */
+      /* ---------------- HOVER (GSAP SAFE) ---------------- */
       gsap.utils.toArray<HTMLElement>(".service-card").forEach((card) => {
-        card.addEventListener("mouseenter", () => {
-          gsap.to(card, {
-            y: -12,
-            scale: 1.03,
-            rotateX: 0,
-            duration: 0.35,
-            ease: "power3.out",
-          })
+        const hoverTl = gsap.timeline({ paused: true })
+        hoverTl.to(card, {
+          y: -14,
+          scale: 1.04,
+          duration: 0.35,
+          ease: "power3.out",
         })
 
-        card.addEventListener("mouseleave", () => {
-          gsap.to(card, {
-            y: 0,
-            scale: 1,
-            duration: 0.35,
-            ease: "power3.out",
-          })
-        })
-      })
-
-      /* ----------------------------
-         FREE DELIVERY BANNER
-      ----------------------------- */
-      gsap.from(".delivery-banner", {
-        scale: 0.9,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: ".delivery-banner",
-          start: "top 85%",
-        },
+        card.addEventListener("mouseenter", () => hoverTl.play())
+        card.addEventListener("mouseleave", () => hoverTl.reverse())
       })
     }, sectionRef)
 
@@ -139,71 +105,59 @@ const ServicesSection: React.FC = () => {
     <section
       ref={sectionRef}
       id="services"
-      className="py-24 bg-background"
-      style={{ perspective: "1200px" }}
+      className="relative py-28 bg-[hsl(222_47%_6%)]"
+      style={{ perspective: "1400px" }}
     >
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="services-header text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary text-secondary-foreground mb-6">
+        <div className="services-header text-center max-w-3xl mx-auto mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-400 mb-6">
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-medium">Our Services</span>
           </div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Professional Care for{" "}
-            <span className="text-gradient">Everything</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            Laundry Care,{" "}
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              Reinvented
+            </span>
           </h2>
 
-          <p className="text-lg text-muted-foreground">
-            From everyday clothes to delicate fabrics, we handle it all with
-            expert care and eco-friendly products.
+          <p className="text-lg text-white/60">
+            Premium laundry services designed for convenience, quality and
+            rewards — all handled with expert care.
           </p>
         </div>
 
         {/* Services Grid */}
-        <div className="services-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="services-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {services.map((service) => (
             <div
               key={service.title}
-              className="service-card group relative p-8 rounded-2xl bg-card border border-border shadow-sm overflow-hidden"
+              className="service-card relative p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md overflow-hidden"
               style={{ transformStyle: "preserve-3d" }}
             >
-              {/* Gradient hover wash */}
+              {/* Glow */}
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 hover:opacity-10 transition-opacity duration-300`}
               />
 
               {/* Icon */}
               <div
-                className={`relative w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center mb-6`}
+                className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center mb-6`}
               >
                 <service.icon className="w-7 h-7 text-white" />
               </div>
 
-              {/* Content */}
-              <h3 className="text-xl font-bold text-foreground mb-3">
+              <h3 className="text-xl font-semibold text-white mb-3">
                 {service.title}
               </h3>
-              <p className="text-muted-foreground mb-4">
-                {service.description}
-              </p>
 
-              <p className="text-sm font-semibold text-primary">
-                {service.price}
+              <p className="text-white/60">
+                {service.description}
               </p>
             </div>
           ))}
-        </div>
-
-        {/* Free delivery banner */}
-        <div className="delivery-banner mt-16 p-8 rounded-2xl gradient-ocean text-center">
-          <h3 className="text-2xl font-bold text-primary-foreground mb-2">
-            🚚 Free Pickup & Delivery on All Orders!
-          </h3>
-          <p className="text-primary-foreground/80">
-            No minimum order required. We come to you, always free.
-          </p>
         </div>
       </div>
     </section>

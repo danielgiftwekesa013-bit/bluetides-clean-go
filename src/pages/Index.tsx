@@ -1,28 +1,11 @@
-import React from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import HeroSection from '@/components/landing/HeroSection';
-import AuthSection from '@/components/landing/AuthSection';
-import ServicesSection from '@/components/landing/ServicesSection';
-import SubscriptionSection from '@/components/landing/SubscriptionSection';
-import BenefitsSection from '@/components/landing/BenefitsSection';
-import FAQChatbot from '@/components/chatbot/FAQChatbot';
+import IntroSplash from "@/components/landing/IntroSplash"
 
-const Index: React.FC = () => {
+const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <HeroSection />
-        <AuthSection />
-        <ServicesSection />
-        <SubscriptionSection />
-        <BenefitsSection />
-      </main>
-      <Footer />
-      <FAQChatbot />
-    </div>
-  );
-};
+    <main className="bg-[hsl(222_47%_6%)]">
+      <IntroSplash />
+    </main>
+  )
+}
 
-export default Index;
+export default Index

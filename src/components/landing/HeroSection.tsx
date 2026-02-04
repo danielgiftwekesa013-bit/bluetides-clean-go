@@ -1,213 +1,170 @@
-import React, { useLayoutEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { useNavigate } from "react-router-dom"
-import { useAuth } from "@/contexts/AuthContext"
-import { ArrowRight, Sparkles, Truck, Clock } from "lucide-react"
+import { useLayoutEffect, useRef } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { Truck, Clock, Sparkles } from "lucide-react"
 
 gsap.registerPlugin(ScrollTrigger)
 
-const HeroSection: React.FC = () => {
-  const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+const DESKTOP_FRAMES = 192
+const MOBILE_FRAMES = 72
 
-  const sectionRef = useRef<HTMLElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-  const drumRef = useRef<HTMLDivElement>(null)
+const HeroSection = () => {
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const contentRef = useRef<HTMLDivElement | null>(null)
 
   useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      /* -------------------------------
-         INTRO TIMELINE (GSAP STYLE)
-      -------------------------------- */
-      const intro = gsap.timeline({
-        defaults: { ease: "power4.out", duration: 1.2 },
-      })
+    const section = sectionRef.current
+    const canvas = canvasRef.current
+    if (!section || !canvas) return
 
-      intro
-        .from(".hero-badge", { y: 40, opacity: 0, rotateX: 30 })
-        .from(".hero-title", { y: 80, opacity: 0, rotateX: 45, z: -200 }, "-=0.8")
-        .from(".hero-subtitle", { y: 60, opacity: 0, z: -150 }, "-=0.8")
-        .from(".hero-cta", { y: 40, opacity: 0, scale: 0.9 }, "-=0.6")
-        .from(".hero-trust > div", { y: 30, opacity: 0, stagger: 0.15 }, "-=0.6")
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
-      /* --------------------------------
-         SCROLL-PINNED HERO (GSAP HOMEPAGE)
-      --------------------------------- */
-      gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
+    const isMobile = window.innerWidth < 768
+    const FRAME_COUNT = isMobile ? MOBILE_FRAMES : DESKTOP_FRAMES
+
+    const images: HTMLImageElement[] = []
+    const frame = { current: 0 }
+    let ready = false
+
+    const resize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      draw()
+    }
+
+    const draw = () => {
+      const img = images[frame.current]
+      if (!img || !img.complete || img.naturalWidth === 0) return
+
+      const scale = Math.max(
+        canvas.width / img.width,
+        canvas.height / img.height
+      )
+
+      const x = canvas.width / 2 - (img.width * scale) / 2
+      const y = canvas.height / 2 - (img.height * scale) / 2
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale)
+    }
+
+    resize()
+    window.addEventListener("resize", resize)
+
+    /* ================= PRELOAD ================= */
+    for (let i = 1; i <= FRAME_COUNT; i++) {
+      const img = new Image()
+      img.src = `/videos/herosection/ezgif-frame-${String(i).padStart(3, "0")}.jpg`
+
+      img.onload = () => {
+        if (!ready && i === 1) {
+          ready = true
+          draw()
+          startAnimation()
+        }
+      }
+
+      images.push(img)
+    }
+
+    /* ================= ANIMATION ================= */
+    const startAnimation = () => {
+      const gsapCtx = gsap.context(() => {
+        /* AUTOPLAY SEQUENCE */
+        gsap.timeline()
+          .to(frame, {
+            current: FRAME_COUNT - 1,
+            duration: isMobile ? 2.8 : 4,
+            ease: "none",
+            onUpdate: draw,
+          })
+          .fromTo(
+            contentRef.current,
+            { opacity: 0, y: 40 },
+            { opacity: 1, y: 0, duration: 1 },
+            0.4
+          )
+
+        /* SCROLL CONTROL */
+        ScrollTrigger.create({
+          trigger: section,
           start: "top top",
-          end: "+=200%",
-          scrub: true,
-          pin: true,
-        },
-      })
-        .to(contentRef.current, {
-          scale: 0.9,
-          opacity: 0.85,
+          end: isMobile ? "+=90%" : "+=120%",
+          scrub: 1,
+          onUpdate: (self) => {
+            frame.current = Math.floor(
+              self.progress * (FRAME_COUNT - 1)
+            )
+            draw()
+          },
         })
-        .to(
-          drumRef.current,
-          {
-            rotateZ: 360,
-          },
-          0
-        )
+      }, section)
 
-      /* --------------------------------
-         SOAP BUBBLES — SCROLL INTERACTION
-      --------------------------------- */
-      gsap.utils.toArray<HTMLElement>(".bubble").forEach((bubble) => {
-        gsap.fromTo(
-          bubble,
-          {
-            y: "120%",
-            opacity: 0,
-            scale: gsap.utils.random(0.6, 1.2),
-          },
-          {
-            y: "-20%",
-            opacity: 1,
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: true,
-            },
-          }
-        )
-      })
-    }, sectionRef)
+      return () => gsapCtx.revert()
+    }
 
-    return () => ctx.revert()
+    return () => {
+      window.removeEventListener("resize", resize)
+    }
   }, [])
 
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-screen flex items-center overflow-hidden"
-      style={{ perspective: "1200px" }}
+      className="relative min-h-screen overflow-hidden bg-black"
     >
-      {/* Background gradient */}
-      <div className="absolute inset-0 gradient-hero" />
+      {/* Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+      />
 
-      {/* Soap bubbles */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(10)].map((_, i) => (
-          <div
-            key={i}
-            className="bubble absolute w-6 h-6 rounded-full bg-white/15 backdrop-blur-sm"
-            style={{
-              left: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* 3D Washing Machine Drum */}
-      <div
-        ref={drumRef}
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        <div className="w-[420px] h-[420px] rounded-full border-[12px] border-white/10 relative">
-          <div className="absolute inset-8 rounded-full border border-white/20" />
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute inset-0 flex items-center justify-center"
-              style={{
-                transform: `rotateZ(${i * 45}deg) translateY(-180px)`,
-              }}
-            >
-              <div className="w-3 h-3 rounded-full bg-white/40" />
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
 
       {/* Content */}
       <div
         ref={contentRef}
-        className="container mx-auto px-4 py-32 relative z-10 text-center"
-        style={{ transformStyle: "preserve-3d" }}
+        className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-4 text-white"
       >
-        {/* Badge */}
-        <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-8">
-          <Sparkles className="w-4 h-4 text-primary-foreground" />
-          <span className="text-sm font-medium text-primary-foreground">
-            Free Pickup & Delivery
-          </span>
-        </div>
-
-        {/* Heading */}
-        <h1 className="hero-title text-5xl md:text-7xl font-extrabold text-primary-foreground mb-6">
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6">
           Fresh. Clean.
           <br />
-          <span className="relative">
-            Delivered Free.
-            <svg
-              className="absolute -bottom-2 left-0 w-full h-3 text-accent"
-              viewBox="0 0 200 12"
-              preserveAspectRatio="none"
-            >
-              <path
-                d="M0,6 Q50,0 100,6 T200,6"
-                stroke="currentColor"
-                strokeWidth="3"
-                fill="none"
-              />
-            </svg>
-          </span>
+          Delivered Free.
         </h1>
 
-        {/* Subheading */}
-        <p className="hero-subtitle text-xl md:text-2xl text-primary-foreground/80 mb-12 max-w-2xl mx-auto">
-          Premium laundry services at your doorstep. We pick up, clean with care,
-          and deliver fresh — all for free.
+        <p className="text-lg md:text-2xl text-white/80 max-w-2xl mb-14">
+          Premium laundry services — picked up, cleaned with care,
+          and delivered back to you.
         </p>
 
-        {/* CTA */}
-        <div className="hero-cta flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button
-            variant="glass"
-            size="xl"
-            onClick={() =>
-              navigate(isAuthenticated ? "/schedule" : "/auth?mode=signup")
-            }
-            className="group"
-          >
-            {isAuthenticated ? "Schedule a Pickup" : "Get Started Free"}
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
-
-          {!isAuthenticated && (
-            <Button variant="heroOutline" size="xl" onClick={() => navigate("/auth")}>
-              Sign In
-            </Button>
-          )}
-        </div>
-
-        {/* Trust indicators */}
-        <div className="hero-trust mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl">
           {[
-            { icon: Truck, label: "Free Pickup & Delivery", sub: "Always" },
-            { icon: Clock, label: "24–48 Hour Turnaround", sub: "Fast & Reliable" },
-            { icon: Sparkles, label: "Eco-Friendly Products", sub: "Gentle Care" },
-          ].map(({ icon: Icon, label, sub }) => (
+            {
+              icon: Truck,
+              title: "Free Pickup & Delivery",
+              sub: "No hidden fees",
+            },
+            {
+              icon: Clock,
+              title: "24–48 Hour Turnaround",
+              sub: "Fast & reliable",
+            },
+            {
+              icon: Sparkles,
+              title: "Premium Care",
+              sub: "Eco-friendly detergents",
+            },
+          ].map(({ icon: Icon, title, sub }) => (
             <div
-              key={label}
-              className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10"
+              key={title}
+              className="p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10"
             >
-              <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                <Icon className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-primary-foreground">{label}</p>
-                <p className="text-sm text-primary-foreground/60">{sub}</p>
-              </div>
+              <Icon className="w-7 h-7 text-blue-400 mx-auto mb-3" />
+              <p className="font-semibold">{title}</p>
+              <p className="text-sm text-white/60">{sub}</p>
             </div>
           ))}
         </div>

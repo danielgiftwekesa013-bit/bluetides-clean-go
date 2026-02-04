@@ -63,12 +63,12 @@ const Header: React.FC = () => {
   // Menu Items (logged-in only)
   // ----------------------------------------
   const profileItems = [
-    { label: "Profile", icon: User, action: () => console.log("Open Profile") },
-    { label: "Orders", icon: Package, action: () => console.log("Open Orders") },
-    { label: "Subscription", icon: Crown, action: () => console.log("Open subscription") },
-    { label: "My Points", icon: Sparkles, action: () => console.log("Open Points") },
-    { label: "Settings", icon: Settings, action: () => console.log("Open Settings") },
-  ];
+  { label: 'Profile', icon: User, action: () => navigate('/profile') },
+  { label: 'Orders', icon: Package, action: () => navigate('/orders') },
+  { label: 'Subscription', icon: Crown, action: () => navigate('/subscription') },
+  { label: 'My Points', icon: Sparkles, action: () => navigate('/points') },
+  
+];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">

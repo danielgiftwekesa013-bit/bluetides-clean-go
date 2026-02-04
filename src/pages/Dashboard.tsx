@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import FAQChatbot from '@/components/chatbot/FAQChatbot';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Header from '@/components/layout/Header'
+import FAQChatbot from '@/components/chatbot/FAQChatbot'
 
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 import {
   Calendar,
@@ -17,97 +17,120 @@ import {
   Gift,
   Crown,
   ArrowRight,
-} from 'lucide-react';
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 
 /* =====================
-   TYPES (DB-ACCURATE)
+   TYPES
 ===================== */
 type OrderStatus =
   | 'scheduled'
   | 'processing'
   | 'washed'
   | 'ready_for_delivery'
-  | 'delivered';
+  | 'delivered'
 
 interface OrderItem {
-  id: number;
-  item_type: string;
-  quantity: number;
-  price: number;
+  id: string
+  item_type: string
+  quantity: number
+  price: number
 }
 
 interface Order {
-  id: number;
-  pickup_date: string;
-  pickup_time_slot: string;
-  status: OrderStatus;
-  total_amount: number;
-  created_at: string;
-  order_items: OrderItem[];
+  id: string
+  pickup_date: string
+  pickup_time_slot: string
+  status: OrderStatus
+  total_amount: number
+  created_at: string
+  order_items: OrderItem[]
 }
 
 interface UserRow {
-  id: number;
-  full_name: string;
-  loyalty_points: number;
-  total_points: number;
+  full_name: string
+  loyalty_points: number
+  total_points: number
+}
+
+interface Subscription {
+  name: string
+  expiry_date: string
 }
 
 /* =====================
-   STATUS STYLES
+   STATUS MAP (BLUE THEME)
 ===================== */
 const statusMap: Record<
   OrderStatus,
-  { label: string; icon: React.ElementType; color: string }
+  { label: string; icon: React.ElementType }
 > = {
-  scheduled: { label: 'Scheduled', icon: Calendar, color: 'bg-yellow-500' },
-  processing: { label: 'Processing', icon: Package, color: 'bg-blue-500' },
-  washed: { label: 'Washed', icon: CheckCircle2, color: 'bg-green-500' },
-  ready_for_delivery: {
-    label: 'Out for Delivery',
-    icon: Truck,
-    color: 'bg-purple-500',
-  },
-  delivered: { label: 'Delivered', icon: CheckCircle2, color: 'bg-gray-500' },
-};
+  scheduled: { label: 'Scheduled', icon: Calendar },
+  processing: { label: 'Processing', icon: Package },
+  washed: { label: 'Washed', icon: CheckCircle2 },
+  ready_for_delivery: { label: 'Out for Delivery', icon: Truck },
+  delivered: { label: 'Delivered', icon: CheckCircle2 },
+}
+
+const PAGE_SIZE = 10
 
 const Dashboard: React.FC = () => {
-  const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, isLoading } = useAuth()
+  const navigate = useNavigate()
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [userRow, setUserRow] = useState<UserRow | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [userRow, setUserRow] = useState<UserRow | null>(null)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   /* =====================
      AUTH GUARD
   ===================== */
   useEffect(() => {
-    if (isLoading) return;
-    if (!user) navigate('/auth', { replace: true });
-  }, [user, isLoading, navigate]);
+    if (!isLoading && !user) navigate('/auth', { replace: true })
+  }, [user, isLoading, navigate])
 
   /* =====================
-     FETCH USER + ORDERS
+     FETCH DATA
   ===================== */
   useEffect(() => {
-    if (!user) return;
+    if (!user) return
 
-    const fetchDashboardData = async () => {
-      setLoading(true);
+    const fetchData = async () => {
+      setLoading(true)
 
+      /* USER */
       const { data: userData } = await supabase
         .from('users')
-        .select('id, full_name, loyalty_points, total_points')
+        .select('full_name, loyalty_points, total_points')
         .eq('id', user.id)
-        .single();
+        .single()
 
-      setUserRow(userData);
+      setUserRow(userData)
 
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      /* ACTIVE SUBSCRIPTION */
+      const { data: subData } = await supabase
+        .from('user_subscriptions')
+        .select('expiry_date, subscription_plans(name)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .gte('expiry_date', new Date().toISOString())
+        .single()
 
-      const { data: orderData } = await supabase
+      if (subData) {
+        setSubscription({
+          name: subData.subscription_plans.name,
+          expiry_date: subData.expiry_date,
+        })
+      }
+
+      /* ORDERS (LAST 7 DAYS, NOT DELIVERED) */
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+      const { data: ordersData } = await supabase
         .from('orders')
         .select(`
           id,
@@ -124,181 +147,173 @@ const Dashboard: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
+        .neq('status', 'delivered')
         .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-      setOrders((orderData || []) as Order[]);
-      setLoading(false);
-    };
+      setOrders((ordersData || []) as Order[])
+      setLoading(false)
+    }
 
-    fetchDashboardData();
-  }, [user]);
+    fetchData()
+  }, [user, page])
 
-  if (isLoading || !user || loading) return null;
+  if (isLoading || loading || !user) return null
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-5xl">
+        <div className="container mx-auto max-w-5xl px-4">
 
           {/* WELCOME */}
           <div className="mb-10">
             <h1 className="text-3xl font-bold">Welcome back 👋</h1>
-            <p className="text-muted-foreground">
-              {userRow?.full_name}
-            </p>
+            <p className="text-muted-foreground">{userRow?.full_name}</p>
           </div>
 
-          {/* SCHEDULE ORDER CTA */}
+          {/* CTA */}
           <div
             onClick={() => navigate('/schedule')}
             className="mb-12 cursor-pointer rounded-3xl p-6 sm:p-8
-              bg-gradient-to-r from-primary to-sky-500 text-white
-              hover:scale-[1.01] transition-all shadow-lg hover:shadow-xl"
+              bg-gradient-to-r from-blue-600 to-sky-500 text-white
+              hover:scale-[1.01] transition shadow-lg"
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex justify-between items-center gap-6">
               <div>
-                <h2 className="text-2xl font-bold mb-1">
-                  Schedule a Pickup
-                </h2>
-                <p className="opacity-90">
-                  Choose a date & time — we’ll handle the rest
-                </p>
+                <h2 className="text-2xl font-bold">Schedule a Pickup</h2>
+                <p className="opacity-90">Fast, clean, reliable</p>
               </div>
-
-              <Button
-                variant="secondary"
-                className="gap-2 text-primary font-semibold"
-              >
-                Schedule Now
+              <Button variant="secondary" className="gap-2 text-blue-600">
+                Schedule
                 <ArrowRight size={18} />
               </Button>
             </div>
           </div>
 
           {/* STATS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {/* LOYALTY */}
+            <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-sky-500 text-white">
               <div className="flex justify-between mb-3">
                 <Gift />
                 <span className="text-xs bg-white/20 px-3 py-1 rounded-full">
                   Loyalty
                 </span>
               </div>
-              <p className="text-4xl font-bold">
-                {userRow?.loyalty_points ?? 0}
-              </p>
-              <p className="text-sm opacity-80">
+              <p className="text-4xl font-bold">{userRow?.loyalty_points ?? 0}</p>
+              <p className="text-sm opacity-90">
                 Total points: {userRow?.total_points ?? 0}
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-card border">
+            {/* SUBSCRIPTION */}
+            <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-sky-500 text-white">
               <div className="flex justify-between mb-3">
-                <Crown className="text-primary" />
-                <span className="text-xs bg-muted px-3 py-1 rounded-full">
+                <Crown />
+                <span className="text-xs bg-white/20 px-3 py-1 rounded-full">
                   Subscription
                 </span>
               </div>
-              <p className="text-xl font-semibold">
-                No active plan
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Subscribe to save more
-              </p>
+              {subscription ? (
+                <>
+                  <p className="text-xl font-semibold">{subscription.name}</p>
+                  <p className="text-sm opacity-90">
+                    Expires {new Date(subscription.expiry_date).toDateString()}
+                  </p>
+                </>
+              ) : (
+                <p className="opacity-90">No active plan</p>
+              )}
             </div>
 
-            <div className="p-6 rounded-2xl bg-card border">
+            {/* ORDERS COUNT */}
+            <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-sky-500 text-white">
               <div className="flex justify-between mb-3">
-                <Package className="text-primary" />
-                <span className="text-xs bg-muted px-3 py-1 rounded-full">
+                <Package />
+                <span className="text-xs bg-white/20 px-3 py-1 rounded-full">
                   Last 7 Days
                 </span>
               </div>
               <p className="text-4xl font-bold">{orders.length}</p>
-              <p className="text-sm text-muted-foreground">
-                Orders placed
-              </p>
+              <p className="text-sm opacity-90">Active orders</p>
             </div>
           </div>
 
-          {/* ORDERS */}
-          <h2 className="text-2xl font-bold mb-6">
-            Recent Orders
-          </h2>
+          {/* RECENT ORDERS */}
+          <h2 className="text-2xl font-bold mb-6">Recent Orders</h2>
 
-          {orders.length === 0 ? (
-            <div className="text-center p-12 rounded-2xl bg-card border">
-              <Package className="mx-auto mb-4 text-muted-foreground" size={48} />
-              <p className="text-muted-foreground">
-                No orders in the past 7 days
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order) => {
-                const status = statusMap[order.status];
-                const Icon = status.icon;
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const Icon = statusMap[order.status].icon
 
-                return (
-                  <div
-                    key={order.id}
-                    className="p-5 rounded-2xl bg-card border hover:border-primary/40 transition"
-                  >
-                    <div className="flex justify-between gap-4">
-                      <div className="flex gap-4">
-                        <div
-                          className={cn(
-                            'w-12 h-12 rounded-xl flex items-center justify-center',
-                            status.color
-                          )}
-                        >
-                          <Icon className="text-white" />
-                        </div>
-
-                        <div>
-                          <p className="font-semibold">
-                            Order #{order.id}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {order.order_items.map(i => i.item_type).join(', ')}
-                          </p>
-                          <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              {order.pickup_date}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock size={14} />
-                              {order.pickup_time_slot}
-                            </span>
-                          </div>
-                        </div>
+              return (
+                <div
+                  key={order.id}
+                  className="rounded-2xl p-5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900"
+                >
+                  <div className="flex justify-between gap-4">
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
+                        <Icon className="text-white" />
                       </div>
 
-                      <div className="text-right">
-                        <p className="font-bold">
-                          KES {order.total_amount?.toLocaleString()}
+                      <div>
+                        <p className="font-semibold">Order #{order.id}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {order.order_items.map(i => i.item_type).join(', ')}
                         </p>
-                        <span className="inline-block mt-1 text-xs px-3 py-1 rounded-full bg-muted">
-                          {status.label}
-                        </span>
+                        <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar size={14} /> {order.pickup_date}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} /> {order.pickup_time_slot}
+                          </span>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="text-right">
+                      <p className="font-bold">
+                        KES {order.total_amount?.toLocaleString()}
+                      </p>
+                      <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700">
+                        {statusMap[order.status].label}
+                      </span>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* PAGINATION */}
+          <div className="flex justify-between mt-8">
+            <Button
+              variant="outline"
+              disabled={page === 0}
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+            >
+              <ChevronLeft size={16} /> Prev
+            </Button>
+
+            <Button
+              variant="outline"
+              disabled={orders.length < PAGE_SIZE}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next <ChevronRight size={16} />
+            </Button>
+          </div>
         </div>
       </main>
 
-      {/* 🚫 No Footer on Dashboard */}
       <FAQChatbot />
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard

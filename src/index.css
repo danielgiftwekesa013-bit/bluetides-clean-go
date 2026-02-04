@@ -19,18 +19,16 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* ===== Primary (Neon Fintech Cyan) ===== */
+    /* ===== Primary ===== */
     --primary: 195 100% 45%;
     --primary-foreground: 222 47% 6%;
 
-    /* ===== Secondary ===== */
     --secondary: 220 30% 94%;
     --secondary-foreground: 222 47% 25%;
 
     --muted: 220 30% 92%;
     --muted-foreground: 222 15% 45%;
 
-    /* ===== Accent (Cyber Teal) ===== */
     --accent: 185 90% 42%;
     --accent-foreground: 0 0% 100%;
 
@@ -74,49 +72,21 @@
     --sidebar-border: 220 25% 88%;
   }
 
-  /* ==========================================================================
-     DARK MODE — FINTECH / CYBER / ADMIN GOLD
-     ========================================================================== */
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
-
     --card: 222 45% 10%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222 45% 10%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 195 100% 55%;
-    --primary-foreground: 222 47% 6%;
-
     --secondary: 222 40% 16%;
-    --secondary-foreground: 210 40% 85%;
-
     --muted: 222 40% 16%;
     --muted-foreground: 210 20% 60%;
-
     --accent: 185 100% 55%;
-    --accent-foreground: 222 47% 6%;
-
     --border: 222 40% 18%;
     --input: 222 40% 18%;
     --ring: 195 100% 55%;
-
-    --gradient-ocean: linear-gradient(
-      135deg,
-      hsl(195 100% 55%),
-      hsl(185 100% 50%)
-    );
-
-    --gradient-card: linear-gradient(
-      180deg,
-      hsl(222 45% 12% / 0.9),
-      hsl(222 45% 10% / 0.85)
-    );
-
-    --shadow-glow: 0 0 60px -12px hsl(185 100% 55% / 0.55);
-
     --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-border: 222 40% 18%;
@@ -124,7 +94,7 @@
 }
 
 /* ==========================================================================
-   GLOBAL BASE STYLES + PREMIUM TRANSITIONS
+   GLOBAL BASE STYLES
    ========================================================================== */
 @layer base {
   * {
@@ -141,41 +111,19 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
-  }
 }
 
 /* ==========================================================================
-   COMPONENT UTILITIES (PREMIUM FEEL)
+   COMPONENT UTILITIES
    ========================================================================== */
 @layer components {
-  .gradient-ocean {
-    background: var(--gradient-ocean);
-  }
+  .gradient-ocean { background: var(--gradient-ocean); }
+  .gradient-hero { background: var(--gradient-hero); }
+  .gradient-card { background: var(--gradient-card); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-medium { box-shadow: var(--shadow-medium); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
 
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-
-  .gradient-card {
-    background: var(--gradient-card);
-  }
-
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-
-  .shadow-medium {
-    box-shadow: var(--shadow-medium);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  /* ===== Premium Glass ===== */
   .glass {
     background: linear-gradient(
       180deg,
@@ -186,97 +134,19 @@
     border: 1px solid hsl(0 0% 100% / 0.25);
     box-shadow: var(--shadow-soft);
   }
-
-  .text-gradient {
-    background-image: var(--gradient-ocean);
-    @apply bg-clip-text text-transparent;
-  }
 }
 
 /* ==========================================================================
-   ANIMATIONS (SUBTLE & PREMIUM)
-   ========================================================================== */
-@layer components {
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.75; }
-  }
-
-  .animate-float {
-    animation: float 4s ease-in-out infinite;
-  }
-
-  .animate-pulse-soft {
-    animation: pulse-soft 2.5s ease-in-out infinite;
-  }
-}
-
-/* ==========================================================================
-   UTILITIES
-   ========================================================================== */
-@layer utilities {
-  .scrollbar-hide {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-}
-/* ==========================================================================
-   1. AMBIENT NEON GLOW BACKGROUND (ADMIN ONLY)
+   ===================== ADMIN — LEAVE AS IS =====================
    ========================================================================== */
 .admin {
   position: relative;
   background:
-    radial-gradient(
-      800px circle at 10% 10%,
-      hsl(195 100% 55% / 0.12),
-      transparent 40%
-    ),
-    radial-gradient(
-      600px circle at 90% 20%,
-      hsl(185 100% 55% / 0.10),
-      transparent 45%
-    ),
-    radial-gradient(
-      700px circle at 50% 90%,
-      hsl(210 100% 45% / 0.08),
-      transparent 50%
-    ),
+    radial-gradient(800px circle at 10% 10%, hsl(195 100% 55% / 0.12), transparent 40%),
+    radial-gradient(600px circle at 90% 20%, hsl(185 100% 55% / 0.10), transparent 45%),
+    radial-gradient(700px circle at 50% 90%, hsl(210 100% 45% / 0.08), transparent 50%),
     hsl(var(--background));
   overflow: hidden;
-}
-
-/* Soft animated glow */
-.admin::before {
-  content: "";
-  position: absolute;
-  inset: -50%;
-  background: radial-gradient(
-    circle,
-    hsl(185 100% 55% / 0.08),
-    transparent 60%
-  );
-  animation: ambientGlow 18s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes ambientGlow {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ==========================================================================
-   2. ADMIN-ONLY DARK MODE ENFORCEMENT
-   ========================================================================== */
-.admin {
   color-scheme: dark;
 }
 
@@ -286,128 +156,67 @@
 }
 
 /* ==========================================================================
-   3. SIDEBAR SELECTION RAIL (FUTURISTIC)
+   ===================== USER LANDING — DARK NAVY =====================
    ========================================================================== */
-.sidebar-item {
-  position: relative;
-  padding-left: 1.25rem;
-  transition: color 0.3s ease;
+.user {
+  --user-bg: 222 60% 6%;
+  --user-fg: 210 40% 98%;
+  --user-muted: 215 20% 65%;
+
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      1200px circle at 20% 10%,
+      hsl(195 100% 35% / 0.12),
+      transparent 45%
+    ),
+    radial-gradient(
+      900px circle at 80% 30%,
+      hsl(210 100% 40% / 0.10),
+      transparent 50%
+    ),
+    hsl(var(--user-bg));
+
+  color: hsl(var(--user-fg));
 }
 
-.sidebar-item::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 10%;
-  width: 3px;
-  height: 0%;
-  background: var(--gradient-ocean);
-  border-radius: 999px;
-  box-shadow: var(--shadow-glow);
-  transition: height 0.35s ease;
+/* User utilities */
+.user .bg-user {
+  background-color: hsl(var(--user-bg));
 }
 
-.sidebar-item:hover::before,
-.sidebar-item.active::before {
-  height: 80%;
+.user .text-user-foreground {
+  color: hsl(var(--user-fg));
 }
 
-.sidebar-item.active {
-  color: hsl(var(--primary));
+.user .text-user-muted {
+  color: hsl(var(--user-muted));
 }
 
 /* ==========================================================================
-   4. PREMIUM STATS CARDS (FLOAT + GLOW)
+   USER VIDEO PIN LAYER
    ========================================================================== */
-.stat-card {
-  position: relative;
-  background: var(--gradient-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: var(--shadow-medium);
-}
-
-/* Glow pulse */
-.stat-card::after {
-  content: "";
-  position: absolute;
+.user .video-layer {
+  position: fixed;
   inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    400px circle at 50% 0%,
-    hsl(195 100% 55% / 0.15),
-    transparent 60%
-  );
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  z-index: 0;
   pointer-events: none;
 }
 
-.stat-card:hover::after {
-  opacity: 1;
+.user .video-layer video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
 }
 
 /* ==========================================================================
-   5. CHART ANIMATIONS (RECHARTS / SVG FRIENDLY)
+   USER MICRO INTERACTIONS
    ========================================================================== */
-.chart-animate path,
-.chart-animate rect,
-.chart-animate line {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-  animation: chartDraw 1.6s ease forwards;
+.user .button-magnetic {
+  will-change: transform;
 }
 
-@keyframes chartDraw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/* Subtle hover lift */
-.chart-container {
-  transition: transform 0.35s ease;
-}
-
-.chart-container:hover {
-  transform: translateY(-4px);
-}
-
-/* ==========================================================================
-   6. PREMIUM LOADING SKELETON (ADMIN FEEL)
-   ========================================================================== */
-.skeleton {
-  background: linear-gradient(
-    110deg,
-    hsl(222 40% 16%) 8%,
-    hsl(222 40% 20%) 18%,
-    hsl(222 40% 16%) 33%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s linear infinite;
-}
-
-@keyframes shimmer {
-  to {
-    background-position-x: -200%;
-  }
-}
-@keyframes fadeSlide {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-slide {
-  animation: fadeSlide 0.45s ease both;
+.user .button-magnetic:hover {
+  transform: translateY(-2px) scale(1.03);
 }

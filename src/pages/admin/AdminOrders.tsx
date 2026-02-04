@@ -159,7 +159,8 @@ const AdminOrders: React.FC = () => {
           pickupDate: o.pickup_date,
           pickupTime: o.pickup_time_slot,
           totalPrice: o.total_amount ?? 0,
-          loyaltyPointsEarned: Math.floor((o.total_amount ?? 0) / 100),
+          loyaltyPointsEarned: Math.floor(((o.total_amount ?? 0) / 450) * 100),
+
           customerName: o.users?.full_name ?? 'Unknown',
           customerEmail: o.users?.email ?? '',
           phone: o.users?.phone ?? '',

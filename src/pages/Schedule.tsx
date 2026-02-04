@@ -20,21 +20,28 @@ import {
   Check,
   Sparkles,
   Loader2,
+  ArrowLeft,
+  Shirt,
+  Bed,
+  Layers,
+  Footprints,
+  Square,
 } from 'lucide-react';
+
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 /* =======================
-   SERVICES
+   ICON MAP (colorful)
 ======================= */
-const services = [
-  { id: 'clothes', name: 'Clothes Washing', unit: 'kg', price: 100 },
-  { id: 'duvet', name: 'Duvet Cleaning', unit: 'each', price: 800 },
-  { id: 'blanket', name: 'Blanket Cleaning', unit: 'each', price: 300 },
-  { id: 'carpet', name: 'Carpet Cleaning', unit: 'sqm', price: 750 },
-  { id: 'mat', name: 'Mat Cleaning', unit: 'each', price: 200 },
-  { id: 'shoes', name: 'Shoe Cleaning', unit: 'pair', price: 150 },
-];
+const serviceIcons: Record<string, any> = {
+  Clothes: Shirt,
+  Duvet: Bed,
+  Blanket: Layers,
+  Carpet: Square,
+  Mat: Square,
+  Shoe: Footprints,
+};
 
 const timeSlots = [
   '08:00','09:00','10:00','11:00','12:00',
@@ -55,17 +62,36 @@ const Schedule: React.FC = () => {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<Record<string, number>>({});
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   /* =======================
      AUTH GUARD
   ======================= */
   useEffect(() => {
-    if (isLoading) return;
-    if (!user) {
+    if (!isLoading && !user) {
       navigate('/auth', { replace: true });
     }
   }, [user, isLoading, navigate]);
+
+  /* =======================
+     FETCH SERVICES
+  ======================= */
+  useEffect(() => {
+    const fetchServices = async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (!error) setServices(data || []);
+      setLoadingServices(false);
+    };
+
+    fetchServices();
+  }, []);
 
   if (isLoading || !user) return null;
 
@@ -85,7 +111,7 @@ const Schedule: React.FC = () => {
 
   const selectedServices = useMemo(
     () => services.filter((s) => items[s.id]),
-    [items]
+    [items, services]
   );
 
   const totalAmount = useMemo(
@@ -97,30 +123,17 @@ const Schedule: React.FC = () => {
     [selectedServices, items]
   );
 
-  /* =======================
-     STEP VALIDATION
-  ======================= */
   const canContinueStep1 = selectedServices.length > 0;
   const canContinueStep2 = Boolean(pickupDate && pickupTime);
-  const canSubmit = Boolean(address && pickupDate && pickupTime && selectedServices.length);
+  const canSubmit = Boolean(
+    address && pickupDate && pickupTime && selectedServices.length
+  );
 
   /* =======================
      SUBMIT ORDER
   ======================= */
   const submitOrder = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    if (!canSubmit) {
-      toast({
-        title: 'Incomplete order',
-        description: 'Please complete all steps before submitting.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (!canSubmit) return;
 
     setSubmitting(true);
 
@@ -154,6 +167,7 @@ const Schedule: React.FC = () => {
 
       const orderItems = selectedServices.map((s) => ({
         order_id: orderRow.id,
+        service_id: s.id,
         item_type: s.name,
         quantity: items[s.id],
         price: s.price,
@@ -186,65 +200,93 @@ const Schedule: React.FC = () => {
      UI
   ======================= */
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background animate-fade-in">
       <Header />
 
       <main className="pt-24 pb-20">
         <div className="container mx-auto max-w-4xl px-4">
 
+          {/* BACK */}
+          <Button
+            variant="ghost"
+            className="mb-6 gap-2"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft size={16} /> Back to Dashboard
+          </Button>
+
           {/* HERO */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
               <Sparkles size={16} />
               Schedule Pickup
             </div>
-            <h1 className="text-3xl font-bold mb-2">
-              Let’s take care of your laundry
-            </h1>
+            <h1 className="text-3xl font-bold">Let’s take care of your laundry</h1>
             <p className="text-muted-foreground">
               Select services, choose time, relax.
             </p>
           </div>
 
           {/* STEPS */}
-          <div className="flex justify-center gap-6 mb-12">
+          <div className="flex justify-center gap-6 mb-10">
             {[1,2,3].map((s) => (
-              <div
+              <button
                 key={s}
+                onClick={() => s < step && setStep(s)}
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all',
-                  step >= s ? 'gradient-ocean text-white scale-105' : 'bg-muted'
+                  'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-300',
+                  step >= s
+                    ? 'gradient-ocean text-white scale-105'
+                    : 'bg-muted text-muted-foreground'
                 )}
               >
                 {step > s ? <Check size={18} /> : s}
-              </div>
+              </button>
             ))}
           </div>
 
           {/* STEP 1 */}
           {step === 1 && (
-            <div className="grid sm:grid-cols-2 gap-6 animate-fade-in">
-              {services.map((s) => (
-                <div key={s.id} className="p-5 rounded-2xl border bg-card">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold">{s.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        KES {s.price} / {s.unit}
-                      </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up">
+              {loadingServices ? (
+                <p className="text-center col-span-full">Loading services…</p>
+              ) : (
+                services.map((s) => {
+                  const Icon =
+                    serviceIcons[s.name.split(' ')[0]] || Shirt;
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="p-5 rounded-2xl border bg-card hover:shadow-md transition"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex gap-3 items-center">
+                          <Icon className="text-primary" />
+                          <div>
+                            <p className="font-semibold">{s.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              KES {s.price} / {s.unit}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button size="icon" variant="outline" onClick={() => updateQty(s.id, -1)}>
+                            <Minus size={14} />
+                          </Button>
+                          <span className="w-6 text-center">
+                            {items[s.id] || 0}
+                          </span>
+                          <Button size="icon" variant="outline" onClick={() => updateQty(s.id, 1)}>
+                            <Plus size={14} />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Button size="icon" variant="outline" onClick={() => updateQty(s.id, -1)}>
-                        <Minus size={16} />
-                      </Button>
-                      <span className="w-6 text-center">{items[s.id] || 0}</span>
-                      <Button size="icon" variant="outline" onClick={() => updateQty(s.id, 1)}>
-                        <Plus size={16} />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })
+              )}
 
               <Button
                 className="sm:col-span-2 mt-4"
@@ -258,14 +300,14 @@ const Schedule: React.FC = () => {
 
           {/* STEP 2 */}
           {step === 2 && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6 animate-slide-up">
               <Calendar
                 mode="single"
                 selected={pickupDate ?? undefined}
-                onSelect={(date) => date && setPickupDate(date)}
+                onSelect={(d) => d && setPickupDate(d)}
               />
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                 {timeSlots.map((t) => (
                   <Button
                     key={t}
@@ -290,7 +332,7 @@ const Schedule: React.FC = () => {
 
           {/* STEP 3 */}
           {step === 3 && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6 animate-slide-up">
               <div>
                 <Label>Pickup Address</Label>
                 <Input value={address} onChange={(e) => setAddress(e.target.value)} />

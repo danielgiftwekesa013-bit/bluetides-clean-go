@@ -65,6 +65,9 @@ const Auth: React.FC = () => {
     setIsLoading(true);
 
     try {
+      /* =========================
+         SIGN UP
+      ========================== */
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -78,16 +81,44 @@ const Auth: React.FC = () => {
           throw new Error(error?.message || 'Signup failed');
         }
 
+        const userId = data.user.id;
+
+        // 🔎 Find inviter if referral code was entered
+        let referredByUserId: string | null = null;
+
+        if (referralCode) {
+          const { data: inviter } = await supabase
+            .from('users')
+            .select('id')
+            .eq('referral_code', referralCode)
+            .single();
+
+          if (inviter) {
+            referredByUserId = inviter.id;
+          }
+        }
+
+        // 👤 Create user profile (FIXED)
         const { error: insertError } = await supabase.from('users').insert({
+          id: userId, // ✅ REQUIRED
           full_name: fullName,
           email,
           phone,
           location,
-          inviter_code: referralCode || null,
           referral_code: crypto.randomUUID().slice(0, 8),
+          inviter_code: referralCode || null, // ✅ save entered code
+          referred_by: referredByUserId,
         });
 
-        if (insertError) throw new Error(insertError.message);
+        if (insertError) throw insertError;
+
+        // 🔗 Create referral record
+        if (referredByUserId) {
+          await supabase.from('referrals').insert({
+            referrer_id: referredByUserId,
+            referred_user_id: userId,
+          });
+        }
 
         toast({
           title: 'Confirm your email 📧',
@@ -95,17 +126,18 @@ const Auth: React.FC = () => {
             'We sent a confirmation link to your email. Please verify your account, then sign in.',
         });
 
-        // Stay on /auth
         return;
       }
 
-      // LOGIN
+      /* =========================
+         LOGIN
+      ========================== */
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
 
       toast({
         title: 'Welcome back 👋',
