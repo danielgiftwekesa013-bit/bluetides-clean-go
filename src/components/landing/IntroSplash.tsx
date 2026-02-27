@@ -184,7 +184,7 @@ export default function IntroSplash() {
             </h2>
            <div className="flex flex-col sm:flex-row gap-4">
   <Link
-    to="/auth"
+    to="/auth?mode=signup"
     className="px-8 py-3 rounded-full bg-blue-500 text-center"
   >
     Create Account
