@@ -3,6 +3,7 @@ import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { Droplet } from "lucide-react"
 import Header from "@/components/layout/Header"
+import { Link } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -181,14 +182,21 @@ export default function IntroSplash() {
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               Ready to Experience Clean?
             </h2>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button className="px-8 py-3 rounded-full bg-blue-500">
-                Create Account
-              </button>
-              <button className="px-8 py-3 rounded-full border border-white">
-                Sign In
-              </button>
-            </div>
+           <div className="flex flex-col sm:flex-row gap-4">
+  <Link
+    to="/auth"
+    className="px-8 py-3 rounded-full bg-blue-500 text-center"
+  >
+    Create Account
+  </Link>
+
+  <Link
+    to="/auth"
+    className="px-8 py-3 rounded-full border border-white text-center"
+  >
+    Sign In
+  </Link>
+</div>
           </div>
         </div>
       </section>

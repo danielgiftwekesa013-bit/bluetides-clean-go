@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 /* =======================
-   ICON MAP (colorful)
+   ICON MAP
 ======================= */
 const serviceIcons: Record<string, any> = {
   Clothes: Shirt,
@@ -53,9 +53,6 @@ const Schedule: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  /* =======================
-     STATE
-  ======================= */
   const [step, setStep] = useState(1);
   const [pickupDate, setPickupDate] = useState<Date | null>(null);
   const [pickupTime, setPickupTime] = useState<string | null>(null);
@@ -80,13 +77,13 @@ const Schedule: React.FC = () => {
   ======================= */
   useEffect(() => {
     const fetchServices = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
 
-      if (!error) setServices(data || []);
+      setServices(data || []);
       setLoadingServices(false);
     };
 
@@ -115,11 +112,8 @@ const Schedule: React.FC = () => {
   );
 
   const totalAmount = useMemo(
-    () =>
-      selectedServices.reduce(
-        (sum, s) => sum + s.price * items[s.id],
-        0
-      ),
+    () => selectedServices.reduce(
+      (sum, s) => sum + s.price * items[s.id], 0),
     [selectedServices, items]
   );
 
@@ -130,7 +124,7 @@ const Schedule: React.FC = () => {
   );
 
   /* =======================
-     SUBMIT ORDER
+     SUBMIT
   ======================= */
   const submitOrder = async () => {
     if (!canSubmit) return;
@@ -138,18 +132,13 @@ const Schedule: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const { data: addressRow, error: addressError } = await supabase
+      const { data: addressRow } = await supabase
         .from('addresses')
-        .insert({
-          user_id: user.id,
-          address_line: address,
-        })
+        .insert({ user_id: user.id, address_line: address })
         .select()
         .single();
 
-      if (addressError) throw addressError;
-
-      const { data: orderRow, error: orderError } = await supabase
+      const { data: orderRow } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
@@ -163,24 +152,18 @@ const Schedule: React.FC = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
-
-      const orderItems = selectedServices.map((s) => ({
-        order_id: orderRow.id,
-        service_id: s.id,
-        item_type: s.name,
-        quantity: items[s.id],
-        price: s.price,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      await supabase.from('order_items').insert(
+        selectedServices.map((s) => ({
+          order_id: orderRow.id,
+          service_id: s.id,
+          item_type: s.name,
+          quantity: items[s.id],
+          price: s.price,
+        }))
+      );
 
       toast({
-        title: 'Pickup scheduled 🎉',
+        title: 'Pickup scheduled 🌊',
         description: `We’ll arrive on ${format(pickupDate!, 'MMMM d')} at ${pickupTime}`,
       });
 
@@ -200,72 +183,79 @@ const Schedule: React.FC = () => {
      UI
   ======================= */
   return (
-    <div className="min-h-screen bg-background animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 text-white">
       <Header />
 
-      <main className="pt-24 pb-20">
-        <div className="container mx-auto max-w-4xl px-4">
+      <main className="pt-24 pb-24">
+        <div className="max-w-4xl mx-auto px-4">
 
           {/* BACK */}
           <Button
             variant="ghost"
-            className="mb-6 gap-2"
+            className="mb-6 text-white/70 hover:text-white"
             onClick={() => navigate('/dashboard')}
           >
-            <ArrowLeft size={16} /> Back to Dashboard
+            <ArrowLeft size={16} className="mr-2" />
+            Back to Dashboard
           </Button>
 
           {/* HERO */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur text-blue-300 mb-4">
               <Sparkles size={16} />
               Schedule Pickup
             </div>
-            <h1 className="text-3xl font-bold">Let’s take care of your laundry</h1>
-            <p className="text-muted-foreground">
-              Select services, choose time, relax.
+            <h1 className="text-3xl font-bold">Let’s handle your laundry</h1>
+            <p className="text-white/70 mt-2">
+              Select services, pick a time, relax ✨
             </p>
           </div>
 
           {/* STEPS */}
           <div className="flex justify-center gap-6 mb-10">
             {[1,2,3].map((s) => (
-              <button
+              <div
                 key={s}
-                onClick={() => s < step && setStep(s)}
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-300',
+                  'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition',
                   step >= s
-                    ? 'gradient-ocean text-white scale-105'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-900/50'
+                    : 'bg-white/10 text-white/60'
                 )}
               >
                 {step > s ? <Check size={18} /> : s}
-              </button>
+              </div>
             ))}
           </div>
 
           {/* STEP 1 */}
           {step === 1 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up">
+            <div className="grid sm:grid-cols-2 gap-4">
               {loadingServices ? (
-                <p className="text-center col-span-full">Loading services…</p>
+                <p className="col-span-full text-center text-white/70">
+                  Loading services…
+                </p>
               ) : (
                 services.map((s) => {
-                  const Icon =
-                    serviceIcons[s.name.split(' ')[0]] || Shirt;
+                  const Icon = serviceIcons[s.name.split(' ')[0]] || Shirt;
 
                   return (
                     <div
                       key={s.id}
-                      className="p-5 rounded-2xl border bg-card hover:shadow-md transition"
+                      className="
+                        p-5 rounded-2xl
+                        bg-white/10 backdrop-blur
+                        border border-white/20
+                        hover:border-blue-400/40
+                        transition
+                      "
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex gap-3 items-center">
-                          <Icon className="text-primary" />
+                          <Icon className="text-blue-400" />
                           <div>
                             <p className="font-semibold">{s.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-white/60">
                               KES {s.price} / {s.unit}
                             </p>
                           </div>
@@ -289,9 +279,14 @@ const Schedule: React.FC = () => {
               )}
 
               <Button
-                className="sm:col-span-2 mt-4"
                 disabled={!canContinueStep1}
                 onClick={() => setStep(2)}
+                className="
+                  sm:col-span-2 mt-6
+                  bg-gradient-to-r from-blue-500 to-indigo-600
+                  hover:from-blue-600 hover:to-indigo-700
+                  shadow-lg shadow-blue-900/40
+                "
               >
                 Continue
               </Button>
@@ -300,7 +295,7 @@ const Schedule: React.FC = () => {
 
           {/* STEP 2 */}
           {step === 2 && (
-            <div className="space-y-6 animate-slide-up">
+            <div className="space-y-6">
               <Calendar
                 mode="single"
                 selected={pickupDate ?? undefined}
@@ -321,9 +316,14 @@ const Schedule: React.FC = () => {
               </div>
 
               <Button
-                className="w-full"
                 disabled={!canContinueStep2}
                 onClick={() => setStep(3)}
+                className="
+                  w-full
+                  bg-gradient-to-r from-blue-500 to-indigo-600
+                  hover:from-blue-600 hover:to-indigo-700
+                  shadow-lg shadow-blue-900/40
+                "
               >
                 Continue
               </Button>
@@ -332,21 +332,26 @@ const Schedule: React.FC = () => {
 
           {/* STEP 3 */}
           {step === 3 && (
-            <div className="space-y-6 animate-slide-up">
+            <div className="space-y-6">
               <div>
-                <Label>Pickup Address</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+                <Label className="text-white">Pickup Address</Label>
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} className="text-black"/>
               </div>
 
               <div>
-                <Label>Notes (optional)</Label>
-                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <Label className="text-white">Notes (optional)</Label>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="text-black"/>
               </div>
 
               <Button
-                className="w-full gap-2"
                 disabled={submitting || !canSubmit}
                 onClick={submitOrder}
+                className="
+                  w-full gap-2
+                  bg-gradient-to-r from-blue-500 to-indigo-600
+                  hover:from-blue-600 hover:to-indigo-700
+                  shadow-xl shadow-blue-900/50
+                "
               >
                 {submitting && <Loader2 className="animate-spin" />}
                 Confirm Order · KES {totalAmount.toLocaleString()}

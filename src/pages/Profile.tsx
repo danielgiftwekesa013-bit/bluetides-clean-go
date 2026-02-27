@@ -143,7 +143,7 @@ const Profile: React.FC = () => {
         animate={{ scale: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <Card className="shadow-soft rounded-2xl backdrop-blur-sm">
+       <Card className="shadow-soft rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-sky-500 backdrop-blur-sm">
           <CardContent className="space-y-5 p-6">
 
             {/* Full Name */}

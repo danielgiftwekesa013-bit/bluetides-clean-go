@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
   if (isLoading || loading || !user) return null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="user min-h-screen">
       <Header />
 
       <main className="pt-24 pb-16">
@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
           {/* WELCOME */}
           <div className="mb-10">
             <h1 className="text-3xl font-bold">Welcome back 👋</h1>
-            <p className="text-muted-foreground">{userRow?.full_name}</p>
+            <p className="text-user-muted">{userRow?.full_name}</p>
           </div>
 
           {/* CTA */}
@@ -252,7 +252,7 @@ const Dashboard: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className="rounded-2xl p-5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900"
+                 className="rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-sky-500 text-white"
                 >
                   <div className="flex justify-between gap-4">
                     <div className="flex gap-4">
@@ -261,11 +261,13 @@ const Dashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <p className="font-semibold">Order #{order.id}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-white">
+                          Order #{order.id}
+                        </p>
+                        <p className="text-sm text-white/90">
                           {order.order_items.map(i => i.item_type).join(', ')}
                         </p>
-                        <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                        <div className="flex gap-4 mt-2 text-sm text-white/80">
                           <span className="flex items-center gap-1">
                             <Calendar size={14} /> {order.pickup_date}
                           </span>
@@ -277,7 +279,7 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="text-right">
-                      <p className="font-bold">
+                      <p className="font-bold text-white">
                         KES {order.total_amount?.toLocaleString()}
                       </p>
                       <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700">

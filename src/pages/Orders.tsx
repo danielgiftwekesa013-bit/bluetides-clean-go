@@ -178,19 +178,19 @@ const Orders: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
           >
-            <Card className="rounded-2xl shadow-soft">
+            <Card className="rounded-2xl shadow-soft p-6 bg-gradient-to-br from-blue-600 to-sky-500 backdrop-blur-sm">
               <CardContent className="p-5 space-y-4">
                 {/* Header */}
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-white mt-10">
                       Pickup: {order.pickup_date}
                     </p>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-white mt-10">
                       Total: KES {order.total_amount}
                     </p>
                   </div>
-                  <Badge className="capitalize">{order.status}</Badge>
+                  <Badge className="capitalize text-white mt-10">{order.status}</Badge>
                 </div>
 
                 {/* Items */}
@@ -223,11 +223,11 @@ const Orders: React.FC = () => {
                           opacity: active ? 1 : 0.4,
                         }}
                         transition={{ duration: 0.3 }}
-                        className="flex flex-col items-center text-xs text-center"
+                        className="flex flex-col items-center text-xs text-center text-white mt-10"
                       >
                         <Icon
                           className={`w-5 h-5 ${
-                            active ? 'text-primary' : 'text-muted-foreground'
+                            active ? 'text-primary' : 'text-white mt-10'
                           }`}
                         />
                         <span className="mt-1 capitalize">{step}</span>
@@ -241,7 +241,7 @@ const Orders: React.FC = () => {
         ))}
 
         {orders.length === 0 && (
-          <div className="text-center text-muted-foreground mt-10">
+          <div className="text-center text-white mt-10">
             No orders found 🧺
           </div>
         )}
