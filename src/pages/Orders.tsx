@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Header from "@/components/Header";
 import {
   ArrowLeft,
   Calendar,
@@ -126,6 +127,7 @@ const Orders: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
+
         <Loader2 className="animate-spin" />
       </div>
     );
@@ -173,7 +175,7 @@ const Orders: React.FC = () => {
       <div className="space-y-4">
         {orders.map((order, index) => (
           <motion.div
-            key={order.id}
+            key={order.id.slice(-6)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}

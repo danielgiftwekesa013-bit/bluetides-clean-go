@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-
+import { cn } from '@/lib/utils';
 import {
   Gift,
   Plus,
@@ -203,7 +203,7 @@ const Points: React.FC = () => {
      UI
   ======================= */
   return (
-    <div className="min-h-screen bg-background animate-fade-in">
+    <div className="user min-h-screen">
       <Header />
 
       <main className="pt-24 pb-20 container max-w-4xl mx-auto px-4">
@@ -244,6 +244,7 @@ const Points: React.FC = () => {
               min={600}
               value={redeemPoints}
               onChange={(e) => setRedeemPoints(Number(e.target.value))}
+              className="text-black caret-black"
             />
             <p className="text-sm text-muted-foreground mt-1">
               Value: KES {redeemValueKES}
@@ -297,7 +298,8 @@ const Points: React.FC = () => {
 
           <div>
             <Label>Pickup Address</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input value={address} onChange={(e) => setAddress(e.target.value)}  className="text-black caret-black" />
+
           </div>
 
           <Button

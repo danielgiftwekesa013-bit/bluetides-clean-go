@@ -348,8 +348,8 @@ const AdminOrders: React.FC = () => {
 
     <div className="flex-1">
       <div className="flex items-center gap-3">
-        <h3 className="font-bold text-lg">
-          Order #{order.id.slice(-6)}
+        <h3 className="font-bold text-lg text-white">
+          Order #{order.id.slice(-4)}
         </h3>
         <span
           className={cn(
@@ -361,14 +361,14 @@ const AdminOrders: React.FC = () => {
         </span>
       </div>
 
-      <p className="mt-1 font-medium">
+      <p className="mt-1 font-medium text-white">
         {order.customerName}
       </p>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-white">
         {order.customerEmail}
       </p>
 
-      <div className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground">
+      <div className="flex flex-wrap gap-4 mt-4 text-sm text-white">
         <span className="flex items-center gap-1">
           <Calendar className="w-4 h-4" />
           {order.pickupDate}
@@ -383,7 +383,7 @@ const AdminOrders: React.FC = () => {
         </span>
       </div>
 
-      <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-1 mt-2 text-sm text-white">
         <MapPin className="w-4 h-4" />
         {order.address}
       </div>
@@ -392,9 +392,9 @@ const AdminOrders: React.FC = () => {
         {order.items.map((item, i) => (
           <div
             key={i}
-            className="flex justify-between text-sm"
+            className="flex justify-between text-sm text-white"
           >
-            <span className="text-muted-foreground">
+            <span className="text-white">
               {item.service} × {item.quantity}
             </span>
             <span className="font-medium">
@@ -408,13 +408,13 @@ const AdminOrders: React.FC = () => {
 
   <div className="flex flex-col items-end gap-4">
     <div className="text-right">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-white">
         Total
       </p>
-      <p className="text-2xl font-bold">
+      <p className="text-2xl font-bold text-white">
         KES {order.totalPrice.toLocaleString()}
       </p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-white">
         +{order.loyaltyPointsEarned} points
       </p>
     </div>

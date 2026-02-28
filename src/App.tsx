@@ -21,6 +21,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Subscription from "./pages/Subscription";
 import Points from "./pages/Points";
+import Header from "@/components/layout/Header";
 
 const queryClient = new QueryClient();
 
@@ -37,7 +38,12 @@ const AdminProviders = ({ children }: { children: React.ReactNode }) => (
  * Enables water / blue animated theme
  */
 const UserLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="user min-h-screen relative">{children}</div>
+  <div className="user min-h-screen">
+    <Header />
+    <main className="pt-16">
+      {children}
+    </main>
+  </div>
 );
 
 const App = () => (

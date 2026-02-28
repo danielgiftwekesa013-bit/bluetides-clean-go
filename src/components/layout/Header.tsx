@@ -70,12 +70,12 @@ const Header: React.FC = () => {
   ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#050b1a] border-b border-white/10">
+      <div className="container mx-auto px-4 ">
+        <div className="flex items-center justify-between h-16 ">
 
           {/* LOGO */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/dashboard" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-xl gradient-ocean flex items-center justify-center shadow-soft group-hover:shadow-medium transition-all">
               <Droplets className="w-6 h-6 text-white" />
             </div>
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
 
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 glass text-user-foreground"
+                  className="w-56 bg-[#050b1a] text-white border border-white/10"
                 >
                   {profileItems.map((item) => (
                     <DropdownMenuItem

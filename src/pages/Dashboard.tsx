@@ -262,7 +262,7 @@ const Dashboard: React.FC = () => {
 
                       <div>
                         <p className="font-semibold text-white">
-                          Order #{order.id}
+                          Order #{order.id.slice(-4)}
                         </p>
                         <p className="text-sm text-white/90">
                           {order.order_items.map(i => i.item_type).join(', ')}

@@ -189,12 +189,12 @@ const Subscription: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08 }}
           >
-            <Card className="rounded-2xl shadow-soft hover:shadow-medium transition-all">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold">{plan.name}</h3>
-                  <Badge variant="secondary">KES {plan.price}</Badge>
-                </div>
+            <Card className="rounded-2xl shadow-soft hover:shadow-medium transition-all bg-gradient-to-br from-blue-600 to-sky-500 text-white">
+  <CardContent className="p-6 space-y-4">
+    <div className="flex items-center justify-between">
+      <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+      <Badge className="bg-white/20 text-white">KES {plan.price}</Badge>
+    </div>
 
                 {/* Benefits */}
                 <ul className="space-y-2 text-sm">

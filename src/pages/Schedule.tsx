@@ -183,7 +183,7 @@ const Schedule: React.FC = () => {
      UI
   ======================= */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 text-white">
+    <div className="user min-h-screen">
       <Header />
 
       <main className="pt-24 pb-24">
